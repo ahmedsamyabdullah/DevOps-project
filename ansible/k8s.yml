@@ -1,0 +1,78 @@
+---
+- name: Set up Kubernetes RBAC and Deploy Ingress Controller
+  hosts: k8s_cluster
+  become: yes
+  tasks:
+
+    # Ensure kubectl is installed
+    - name: Install kubectl
+      shell: |
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod +x kubectl
+        mv kubectl /usr/local/bin/
+      args:
+        creates: /usr/local/bin/kubectl
+
+    # Ensure Helm is installed
+    - name: Install Helm
+      shell: |
+        curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        chmod +x get_helm.sh
+        ./get_helm.sh
+      args:
+        creates: /usr/local/bin/helm
+
+    # Create RBAC Role
+    - name: Create RBAC Role for Ingress Controller
+      copy:
+        dest: "/tmp/ingress-rbac.yml"
+        content: |
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          metadata:
+            name: ingress-controller
+          rules:
+            - apiGroups: [""]
+              resources: ["services", "endpoints", "pods"]
+              verbs: ["get", "list", "watch"]
+            - apiGroups: ["extensions", "networking.k8s.io"]
+              resources: ["ingresses"]
+              verbs: ["get", "list", "watch"]
+            - apiGroups: [""]
+              resources: ["configmaps"]
+              verbs: ["get"]
+            - apiGroups: [""]
+              resources: ["secrets"]
+              verbs: ["get", "list", "watch"]
+    - name: Apply RBAC Role
+      command: kubectl apply -f /tmp/ingress-rbac.yml
+
+    # Create RBAC RoleBinding
+    - name: Create RoleBinding for Ingress Controller
+      copy:
+        dest: "/tmp/ingress-rolebinding.yml"
+        content: |
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: ingress-controller
+          subjects:
+            - kind: ServiceAccount
+              name: ingress-nginx
+              namespace: kube-system
+          roleRef:
+            kind: ClusterRole
+            name: ingress-controller
+            apiGroup: rbac.authorization.k8s.io
+    - name: Apply RoleBinding
+      command: kubectl apply -f /tmp/ingress-rolebinding.yml
+
+    # Deploy Nginx Ingress Controller using Helm
+    - name: Add Helm Repo for Nginx Ingress
+      command: helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+
+    - name: Update Helm Repos
+      command: helm repo update
+
+    - name: Deploy Nginx Ingress Controller
+      command: helm install ingress-nginx ingress-nginx/ingress-nginx --namespace kube-system --set controller.publishService.enabled=true

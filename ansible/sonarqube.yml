@@ -1,0 +1,146 @@
+- name: Install SonarQube on AWS EC2
+  hosts: all
+  become: true
+  vars:
+    sonar_user: "sonarqube"
+    sonar_group: "sonarqube"
+    sonar_home: "/opt/sonarqube"
+    sonar_version: "10.3.0.82913"   
+    db_password: "samy25"   
+
+  tasks:
+    - name: Update and upgrade system packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install required dependencies
+      apt:
+        name:
+          - postgresql
+          - postgresql-contrib
+          - unzip
+          - wget
+          - curl
+          - net-tools
+          - gnupg
+        state: present
+    - name: Install ACL package
+      apt:
+        name: acl
+        state: present
+        update_cache: yes
+
+
+    - name: Ensure PostgreSQL service is running
+      service:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Create SonarQube PostgreSQL database
+      become_user: postgres
+      become_method: sudo
+      postgresql_db:
+        name: sonarqube
+        state: present
+
+    - name: Create SonarQube PostgreSQL user
+      become_user: postgres
+      postgresql_user:
+        db: sonarqube
+        name: sonarqube
+        password: "{{ db_password }}"
+        priv: "ALL"
+        state: present
+    
+    - name: Find PostgreSQL configuration directory
+      command: psql -t -P format=unaligned -c "SHOW data_directory;"
+      register: pg_data_dir
+      changed_when: false
+      become: yes
+      become_user: postgres
+
+    - name: Update PostgreSQL settings for SonarQube
+      become: yes
+      become_user: postgres
+      lineinfile:
+       path: "/etc/postgresql/16/main/pg_hba.conf"
+       line: "host    all             all             0.0.0.0/0               md5"
+       state: present
+       backup: yes
+      notify: Restart PostgreSQL
+      
+
+
+    - name: Download and extract SonarQube
+      get_url:
+        url: "https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-{{ sonar_version }}.zip"
+        dest: "/tmp/sonarqube.zip"
+      register: download_sonar
+
+    - name: Extract SonarQube
+      unarchive:
+        src: "/tmp/sonarqube.zip"
+        dest: "/opt/"
+        remote_src: yes
+        extra_opts: []
+      when: download_sonar.changed
+
+    - name: Create SonarQube group
+      group:
+       name: sonarqube
+       state: present
+      become: yes
+
+    - name: Create SonarQube user
+      user:
+       name: sonarqube
+       group: sonarqube
+       home: /opt/sonarqube
+       shell: /bin/bash
+       state: present
+      become: yes
+
+    - name: Set permissions for SonarQube
+      file:
+        path: "{{ sonar_home }}"
+        owner: "{{ sonar_user }}"
+        group: "{{ sonar_group }}"
+        recurse: yes
+
+    - name: Create Systemd Service for SonarQube
+      copy:
+        dest: /etc/systemd/system/sonarqube.service
+        content: |
+          [Unit]
+          Description=SonarQube service
+          After=network.target postgresql.service
+          
+          [Service]
+          Type=forking
+          User=sonarqube
+          Group=sonarqube
+          ExecStart={{ sonar_home }}/bin/linux-x86-64/sonar.sh start
+          ExecStop={{ sonar_home }}/bin/linux-x86-64/sonar.sh stop
+          LimitNOFILE=65536
+          Restart=on-failure
+          
+          [Install]
+          WantedBy=multi-user.target
+      notify: Restart SonarQube
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+
+  handlers:
+    - name: Restart PostgreSQL
+      service:
+        name: postgresql
+        state: restarted
+
+    - name: Restart SonarQube
+      service:
+        name: sonarqube
+        state: restarted

@@ -34,6 +34,19 @@
             - Enable state locking using a DynamoDB table
 
 2. Ansible: Configure Jenkins, Docker, and SonarQube
+    - Jenkins Configuration
+        - Install Jenkins on the EC2 instance.
+        - Configure Jenkins plugins and credentials.
+        - Installs Java, Docker, Git for Jenkins
+    - for install docker and jenkins run main.yml playbook
+    - Install SonarQube 
+        - for install sonarqube run sonarqube.yml playbook
+    -  Kubernetes RBAC and Ingress Controller
+        - Deploy an Ingress Controller for managing external access to services.
+        - Create RBAC roles and role bindings for Kubernetes
+        -  Deploy an Nginx Ingress Controller on the cluster
+***
+
     
 
 
