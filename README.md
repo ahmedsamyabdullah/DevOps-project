@@ -79,8 +79,17 @@
     - Updates kubectl configuration to connect to the AWS EKS cluster.
     - Runs helm upgrade --install to deploy the app.
 ##  Install the Helm Chart
-    - helm install samy-app ./helm/helm-chart
+    - helm install samy-app ./helm-chart
 ***
+# Phase 3: Security Best Practices Implementation Plan
+1. AWS Security:
+    - Use IAM roles with least privilege access.
+    - use terraform policy, this policy does:
+        -  Allows Terraform to manage EC2 instances (describe, create, delete).
+        -  Grants Terraform access to S3 for state storage (terraform-state-bucket).
+        - Provides IAM role management for Terraform (terraform-role).
+    -  Enable S3 Bucket Encryption for Terraform State
+        - Use KMS encryption for Terraform state.
 
 
 
