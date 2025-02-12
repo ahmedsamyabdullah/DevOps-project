@@ -27,3 +27,9 @@ spec:
             limits:
               memory: {{ .Values.resources.limits.memory }}
               cpu: {{ .Values.resources.limits.cpu }}
+env:
+  - name: DB_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: vault-secrets
+        key: db-password

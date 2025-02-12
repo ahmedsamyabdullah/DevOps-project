@@ -51,6 +51,14 @@ pipeline {
                 }
             }
         }
+        stage('Security Scanning - Trivy') {
+             steps {
+               script {
+                      sh 'trivy image ${DOCKER_IMAGE} || true'
+                       }
+                    }
+        }
+
 
         stage('Deployment - Helm & Kubernetes RBAC') {
             steps {

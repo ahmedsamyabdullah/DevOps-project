@@ -90,6 +90,24 @@
         - Provides IAM role management for Terraform (terraform-role).
     -  Enable S3 Bucket Encryption for Terraform State
         - Use KMS encryption for Terraform state.
+2. Kubernetes Security
+    - Enable RBAC for Kubernetes Access Control
+        - Already implemented using Helm RBAC setup.
+    - Restrict Pod-to-Pod Communication Using Network Policies
+3. Secret Management with Vault:
+    - Install Vault on Kubernetes:
+       -  helm repo add hashicorp https://helm.releases.hashicorp.com
+       -  helm install vault hashicorp/vault --set "server.dev.enabled=true"
+    - Store Secrets in Vault:
+        - vault kv put secret/db password="SuperSecret123"
+    - in deployment.yml we will modify Secrets in Kubernetes Pods.
+4. Vulnerability Scanning:
+    - SonarQube for Code Security (Already implemented in Jenkins pipeline).
+    - Trivy for Container Vulnerability Scanning:
+        - Scan Docker Images with Trivy
+        - Automate Trivy in Jenkins ( I modified Jenkinsfile)
+***
+
 
 
 
