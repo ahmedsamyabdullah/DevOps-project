@@ -46,6 +46,39 @@
         - Create RBAC roles and role bindings for Kubernetes
         -  Deploy an Nginx Ingress Controller on the cluster
 ***
+# Phase 2: CI/CD Pipeline with Jenkins & Docker
+- Jenkins will automate build, test, containerization, security scanning, and deployment.
+- First, we need to create ECR-repo:
+    - aws ecr create-repository --repository-name samy-ecr-repo --region us-east-2
+1. Commit Stage:
+    - The developer pushes code to the GitHub repository.
+2. Build & Test Stage:
+    - Jenkins automates the build and testing process.
+    - Build:
+        - Jenkins pulls the latest code from the repository.
+        - Compiles the code 
+        - Packages the application 
+        - Use maven to:
+            - Clean previous builds
+            - Compile the source code.
+            - Run unit tests.
+3. Unit Testing:
+    - Runs unit tests to verify individual components.
+    - Fails the pipeline if any test fails.
+4. Code Quality Check:
+    - Integrates with SonarQube to analyze code quality.
+    - Checks for code vulnerabilities.
+5.  Containerization - Build & Push to Amazon ECR
+    - Runs docker build to create the container image.
+    - Runs docker push to upload the image to ECR.
+6. Security Scanning (Trivy & Vault)
+    - Uses Trivy to scan the Docker image for vulnerabilities.
+    - Fetches secrets from HashiCorp Vault.
+7.  Deployment - Helm & Kubernetes RBAC
+    - Deploys the application to Kubernetes using Helm charts.
+    - Updates kubectl configuration to connect to the AWS EKS cluster.
+    - Runs helm upgrade --install to deploy the app.
+
 
     
 
