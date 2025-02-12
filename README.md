@@ -78,6 +78,11 @@
     - Deploys the application to Kubernetes using Helm charts.
     - Updates kubectl configuration to connect to the AWS EKS cluster.
     - Runs helm upgrade --install to deploy the app.
+##  Install the Helm Chart
+    - helm install samy-app ./helm/helm-chart
+***
+
+
 
 
     
